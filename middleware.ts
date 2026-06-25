@@ -33,13 +33,16 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = pathname.includes('/login') || pathname.includes('/setup-mfa');
   const isApiRoute = pathname.startsWith('/api/');
 
+  const isMockUser = request.cookies.get('mock-user')?.value === 'true';
+  const hasUser = user || isMockUser;
+
   if (!isApiRoute) {
-    if (!user && !isAuthPage) {
+    if (!hasUser && !isAuthPage) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/fr/login';
       return NextResponse.redirect(loginUrl);
     }
-    if (user && isAuthPage) {
+    if (hasUser && isAuthPage) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/fr/dashboard';
       return NextResponse.redirect(dashboardUrl);

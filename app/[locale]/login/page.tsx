@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Eye, EyeOff, Truck, Shield, Globe } from 'lucide-react';
 
@@ -13,6 +13,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [mfaCode, setMfaCode] = useState('');
   const [locale, setLocale] = useState('fr');
+
+  useEffect(() => {
+    // Clear mock session cookie on login page mount
+    document.cookie = 'mock-user=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  }, []);
 
   const handleCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +33,16 @@ export default function LoginPage() {
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 700));
     setIsLoading(false);
+
+    // Save mock user info for the layout
+    const userRole = email === 'daf@demo.com' ? 'daf' : email === 'log@demo.com' ? 'logistique' : 'dg';
+    const userName = email === 'daf@demo.com' ? 'DAF' : email === 'log@demo.com' ? 'Responsable Logistique' : 'Directeur Général';
+    localStorage.setItem('mock-user-email', email || 'dg@demo.com');
+    localStorage.setItem('mock-user-role', userRole);
+    localStorage.setItem('mock-user-name', userName);
+
+    // Set a mock session cookie to bypass Supabase middleware check for demo purposes
+    document.cookie = 'mock-user=true; path=/';
     // Redirect to dashboard
     window.location.href = `/${locale}/dashboard`;
   };

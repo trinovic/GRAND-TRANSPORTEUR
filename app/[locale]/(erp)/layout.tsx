@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -51,6 +51,18 @@ export default function ERPLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [userEmail, setUserEmail] = useState('dg@demo.com');
+  const [userName, setUserName] = useState('Directeur Général');
+  const [userRole, setUserRole] = useState('dg');
+
+  useEffect(() => {
+    const email = localStorage.getItem('mock-user-email');
+    const name = localStorage.getItem('mock-user-name');
+    const role = localStorage.getItem('mock-user-role');
+    if (email) setUserEmail(email);
+    if (name) setUserName(name);
+    if (role) setUserRole(role);
+  }, []);
 
   const isActive = (href: string) => pathname.includes(href) && href !== '/dashboard'
     ? true
@@ -164,11 +176,11 @@ export default function ERPLayout({ children }: { children: React.ReactNode }) {
         {sidebarOpen && (
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
             <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
-              <span className="text-brand-700 text-xs font-bold">DG</span>
+              <span className="text-brand-700 text-xs font-bold uppercase">{userRole.slice(0, 2)}</span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-text-primary truncate">Directeur Général</p>
-              <p className="text-[10px] text-text-muted truncate">dg@demo.com</p>
+              <p className="text-xs font-semibold text-text-primary truncate">{userName}</p>
+              <p className="text-[10px] text-text-muted truncate">{userEmail}</p>
             </div>
           </div>
         )}
