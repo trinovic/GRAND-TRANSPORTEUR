@@ -1,0 +1,222 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-primary: #1E40AF;
+    --brand-accent: #3B82F6;
+    --surface-bg: #F8FAFC;
+    --surface-card: #FFFFFF;
+    --surface-border: #E2E8F0;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #F8FAFC;
+    color: #0F172A;
+    line-height: 1.5;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F1F5F9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+}
+
+@layer components {
+  /* KPI Card variants */
+  .kpi-card {
+    @apply bg-white rounded-xl shadow-card p-6 border border-surface-border transition-shadow duration-200 hover:shadow-card-hover;
+  }
+
+  .kpi-card-success {
+    @apply border-l-4 border-l-success;
+  }
+
+  .kpi-card-danger {
+    @apply border-l-4 border-l-danger;
+  }
+
+  .kpi-card-warning {
+    @apply border-l-4 border-l-warning;
+  }
+
+  .kpi-card-info {
+    @apply border-l-4 border-l-brand-600;
+  }
+
+  /* Table styles */
+  .data-table {
+    @apply w-full text-sm;
+  }
+
+  .data-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider bg-surface-bg border-b border-surface-border;
+  }
+
+  .data-table td {
+    @apply px-4 py-3.5 text-text-primary border-b border-surface-border;
+  }
+
+  .data-table tr:hover td {
+    @apply bg-surface-hover;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply bg-success-light text-success;
+  }
+
+  .badge-danger {
+    @apply bg-danger-light text-danger;
+  }
+
+  .badge-warning {
+    @apply bg-warning-light text-warning;
+  }
+
+  .badge-info {
+    @apply bg-info-light text-info;
+  }
+
+  .badge-gray {
+    @apply bg-slate-100 text-slate-600;
+  }
+
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-700 text-white hover:bg-brand-800 active:bg-brand-900;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-text-primary border border-surface-border hover:bg-surface-hover;
+  }
+
+  .btn-danger {
+    @apply btn bg-danger text-white hover:bg-red-600;
+  }
+
+  .btn-ghost {
+    @apply btn text-text-secondary hover:bg-surface-hover hover:text-text-primary;
+  }
+
+  /* Form inputs */
+  .input {
+    @apply w-full px-3 py-2 text-sm text-text-primary bg-white border border-surface-border rounded-lg outline-none transition-all duration-150 placeholder:text-text-muted;
+    @apply focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-text-secondary mb-1.5;
+  }
+
+  /* Section card */
+  .section-card {
+    @apply bg-white rounded-xl border border-surface-border shadow-card overflow-hidden;
+  }
+
+  .section-header {
+    @apply flex items-center justify-between px-6 py-4 border-b border-surface-border;
+  }
+
+  /* Sidebar */
+  .sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-text-secondary transition-all duration-150 hover:bg-brand-50 hover:text-brand-700;
+  }
+
+  .sidebar-link.active {
+    @apply bg-brand-50 text-brand-700;
+  }
+
+  .sidebar-link.active .sidebar-icon {
+    @apply text-brand-600;
+  }
+
+  /* Alert cards */
+  .alert-card {
+    @apply flex gap-3 p-4 rounded-lg border;
+  }
+
+  .alert-card-danger {
+    @apply alert-card bg-danger-light border-red-200;
+  }
+
+  .alert-card-warning {
+    @apply alert-card bg-warning-light border-amber-200;
+  }
+
+  .alert-card-info {
+    @apply alert-card bg-info-light border-blue-200;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out both;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.25s ease-out both;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Staggered children */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 360ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 420ms; }
