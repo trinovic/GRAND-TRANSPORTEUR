@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import {
   LayoutDashboard, BookOpen, FileText, Truck, Users, MapPin,
   Wrench, Fuel, UserCog, Receipt, BarChart3, Bot,
   FolderOpen, Settings, LogOut, ChevronDown, ChevronRight,
-  Bell, Globe, Menu, X, Building2,
+  Bell, Globe, Menu, X, Building2, Check, User, Shield,
 } from 'lucide-react';
 
 interface NavItem {
@@ -43,6 +43,12 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'admin',        href: '/administration',     icon: Settings },
 ];
 
+const NOTIFICATIONS = [
+  { id: '1', title: 'Maintenance due', desc: 'Véhicule TN-7701-EF — Vidange + filtres dans 3 jours', time: 'il y a 5 min', read: false },
+  { id: '2', title: 'Facture en retard', desc: 'FAC-2026-0832 (SONACOS) dépasse l\'échéance depuis 3 jours', time: 'il y a 1h', read: false },
+  { id: '3', title: 'Mission terminée', desc: 'Mission MIS-2026-7834 Dakar → Bamako livrée avec succès', time: 'il y a 3h', read: true },
+];
+
 export default function ERPLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('nav');
   const locale = useLocale();
@@ -54,6 +60,13 @@ export default function ERPLayout({ children }: { children: React.ReactNode }) {
   const [userEmail, setUserEmail] = useState('dg@demo.com');
   const [userName, setUserName] = useState('Directeur Général');
   const [userRole, setUserRole] = useState('dg');
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [currency, setCurrency] = useState('XOF');
+  const [currencyToast, setCurrencyToast] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  const notifsRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const email = localStorage.getItem('mock-user-email');
@@ -63,6 +76,24 @@ export default function ERPLayout({ children }: { children: React.ReactNode }) {
     if (name) setUserName(name);
     if (role) setUserRole(role);
   }, []);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (notifsRef.current && !notifsRef.current.contains(e.target as Node)) setShowNotifs(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setShowUserMenu(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const handleCurrencyChange = (val: string) => {
+    setCurrency(val);
+    setCurrencyToast(`Devise changée en ${val}`);
+    setTimeout(() => setCurrencyToast(null), 2500);
+  };
+
+  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const isActive = (href: string) => pathname.includes(href) && href !== '/dashboard'
     ? true
@@ -247,22 +278,89 @@ export default function ERPLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Currency toast */}
+            {currencyToast && (
+              <div className="fixed top-4 right-4 z-[100] px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-xl shadow-lg flex items-center gap-2">
+                <Check className="w-4 h-4" /> {currencyToast}
+              </div>
+            )}
+
             {/* Currency selector */}
-            <select className="text-xs text-text-secondary bg-surface-bg border border-surface-border rounded-lg px-3 py-1.5 outline-none focus:border-brand-400">
+            <select
+              className="text-xs text-text-secondary bg-surface-bg border border-surface-border rounded-lg px-3 py-1.5 outline-none focus:border-brand-400"
+              value={currency}
+              onChange={e => handleCurrencyChange(e.target.value)}
+            >
               <option value="XOF">XOF (FCFA)</option>
               <option value="EUR">EUR (€)</option>
               <option value="USD">USD ($)</option>
             </select>
 
             {/* Notifications */}
-            <button className="relative btn-ghost p-2">
-              <Bell className="w-4.5 h-4.5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full" />
-            </button>
+            <div className="relative" ref={notifsRef}>
+              <button
+                onClick={() => setShowNotifs(!showNotifs)}
+                className="relative btn-ghost p-2"
+              >
+                <Bell className="w-4.5 h-4.5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-danger rounded-full text-[9px] font-bold text-white flex items-center justify-center">{unreadCount}</span>
+                )}
+              </button>
+              {showNotifs && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl border border-surface-border shadow-xl z-50">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-surface-border">
+                    <h3 className="text-sm font-bold text-text-primary">Notifications</h3>
+                    <button onClick={markAllRead} className="text-xs text-brand-700 hover:underline">Tout marquer lu</button>
+                  </div>
+                  <div className="divide-y divide-surface-border max-h-72 overflow-y-auto">
+                    {notifications.map(n => (
+                      <div key={n.id} className={`px-4 py-3 hover:bg-surface-bg transition-all cursor-pointer ${!n.read ? 'bg-brand-50/30' : ''}`}>
+                        <div className="flex items-start gap-2">
+                          {!n.read && <span className="w-2 h-2 rounded-full bg-brand-700 mt-1.5 flex-shrink-0" />}
+                          {n.read && <span className="w-2 h-2 flex-shrink-0" />}
+                          <div>
+                            <p className="text-xs font-semibold text-text-primary">{n.title}</p>
+                            <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">{n.desc}</p>
+                            <p className="text-[10px] text-text-muted mt-1">{n.time}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
-            {/* Avatar */}
-            <div className="w-8 h-8 rounded-full bg-brand-700 flex items-center justify-center cursor-pointer">
-              <span className="text-white text-xs font-bold">DG</span>
+            {/* Avatar + User menu */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="w-8 h-8 rounded-full bg-brand-700 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-brand-300 transition-all"
+              >
+                <span className="text-white text-xs font-bold uppercase">{userRole.slice(0, 2)}</span>
+              </button>
+              {showUserMenu && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl border border-surface-border shadow-xl z-50">
+                  <div className="px-4 py-3 border-b border-surface-border">
+                    <p className="text-sm font-semibold text-text-primary truncate">{userName}</p>
+                    <p className="text-xs text-text-muted truncate">{userEmail}</p>
+                    <span className="mt-1 inline-block badge bg-brand-50 text-brand-700 uppercase text-[10px] font-bold">{userRole}</span>
+                  </div>
+                  <div className="p-1">
+                    <Link href={`/${locale}/administration`} onClick={() => setShowUserMenu(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-bg rounded-lg transition-all">
+                      <User className="w-4 h-4" /> Mon profil
+                    </Link>
+                    <Link href={`/${locale}/administration`} onClick={() => setShowUserMenu(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-bg rounded-lg transition-all">
+                      <Shield className="w-4 h-4" /> Sécurité &amp; MFA
+                    </Link>
+                    <div className="border-t border-surface-border my-1" />
+                    <Link href={`/${locale}/login`} className="flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-red-50 rounded-lg transition-all">
+                      <LogOut className="w-4 h-4" /> {t('logout')}
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

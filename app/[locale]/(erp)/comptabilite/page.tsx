@@ -5,6 +5,7 @@ import {
   BookOpen, ChevronRight, TrendingUp, TrendingDown,
   DollarSign, FileText, BarChart2, Download, Filter,
   Plus, Search, CheckCircle, Clock, AlertCircle,
+  X, Save, Loader2, Check
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -59,11 +60,50 @@ const JOURNAL_COLORS: Record<string, string> = {
   Caisse: 'bg-purple-50 text-purple-700',
 };
 
+const exportCSV = (entries: typeof JOURNAL_ENTRIES) => {
+  const header = ['Date', 'Ref', 'Compte', 'Intitule', 'Libelle', 'Debit', 'Credit', 'Journal'].join(';');
+  const rows = entries.map(e => [
+    e.date, e.ref, e.account, e.acctName, e.label, e.debit, e.credit, e.journal
+  ].join(';'));
+  const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'journal_ecritures.csv'; a.click();
+  URL.revokeObjectURL(url);
+};
+
 export default function ComptabilitePage() {
   const [activeTab, setActiveTab] = useState<'journal' | 'balance' | 'bilan'>('journal');
   const [journalFilter, setJournalFilter] = useState('all');
+  const [showEcritureModal, setShowEcritureModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [journalEntries, setJournalEntries] = useState(JOURNAL_ENTRIES);
+  const [ecritureForm, setEcritureForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    account: '', acctName: '', label: '',
+    debit: 0, credit: 0, journal: 'Ventes'
+  });
 
-  const filteredEntries = JOURNAL_ENTRIES.filter(e =>
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+
+  const handleSaveEcriture = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setTimeout(() => {
+      const newEntry = {
+        id: String(Date.now()),
+        ref: `MAN-${Math.floor(1000 + Math.random() * 9000)}`,
+        ...ecritureForm,
+        auto: false
+      };
+      setJournalEntries(prev => [newEntry, ...prev]);
+      setIsSaving(false);
+      setShowEcritureModal(false);
+      showToast('Ecriture comptable enregistrée avec succès.');
+    }, 600);
+  };
+
+  const filteredEntries = journalEntries.filter(e =>
     journalFilter === 'all' || e.journal === journalFilter
   );
 
@@ -78,6 +118,12 @@ export default function ComptabilitePage() {
 
   return (
     <div className="p-6 space-y-6">
+      {toast && (
+        <div className="fixed top-4 right-4 z-[100] px-5 py-3 rounded-xl shadow-lg text-sm font-medium text-white flex items-center gap-2 bg-green-600">
+          <Check className="w-4 h-4" /> {toast}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -85,8 +131,8 @@ export default function ComptabilitePage() {
           <p className="text-sm text-text-secondary mt-0.5">Exercice 2026 · Plan comptable SYSCOHADA</p>
         </div>
         <div className="flex gap-2">
-          <button className="btn-secondary text-xs"><Download className="w-3.5 h-3.5" /> Exporter</button>
-          <button className="btn-primary text-xs"><Plus className="w-3.5 h-3.5" /> Nouvelle écriture</button>
+          <button onClick={() => exportCSV(filteredEntries)} className="btn-secondary text-xs"><Download className="w-3.5 h-3.5" /> Exporter CSV</button>
+          <button onClick={() => setShowEcritureModal(true)} className="btn-primary text-xs"><Plus className="w-3.5 h-3.5" /> Nouvelle écriture</button>
         </div>
       </div>
 
@@ -262,6 +308,77 @@ export default function ComptabilitePage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {/* Nouvelle écriture modal */}
+      {showEcritureModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl border border-surface-border w-full max-w-lg">
+            <div className="flex items-center justify-between p-6 border-b border-surface-border">
+              <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                <FileText className="w-5 h-5 text-brand-700" /> Saisir une écriture comptable
+              </h3>
+              <button onClick={() => setShowEcritureModal(false)} className="text-text-muted hover:text-text-primary">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEcriture} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Date *</label>
+                  <input type="date" required className="input" value={ecritureForm.date}
+                    onChange={e => setEcritureForm({ ...ecritureForm, date: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Journal *</label>
+                  <select required className="input" value={ecritureForm.journal}
+                    onChange={e => setEcritureForm({ ...ecritureForm, journal: e.target.value })}>
+                    <option>Ventes</option>
+                    <option>Achats</option>
+                    <option>Banque</option>
+                    <option>Caisse</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">N° de compte *</label>
+                  <input type="text" required placeholder="411000" className="input font-mono"
+                    value={ecritureForm.account}
+                    onChange={e => setEcritureForm({ ...ecritureForm, account: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Intitulé du compte *</label>
+                  <input type="text" required placeholder="Clients - SONACOS" className="input"
+                    value={ecritureForm.acctName}
+                    onChange={e => setEcritureForm({ ...ecritureForm, acctName: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <label className="label">Libellé de l'écriture *</label>
+                  <input type="text" required placeholder="Facture N°FAC-2026-..." className="input"
+                    value={ecritureForm.label}
+                    onChange={e => setEcritureForm({ ...ecritureForm, label: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Débit (XOF)</label>
+                  <input type="number" min={0} className="input font-semibold"
+                    value={ecritureForm.debit}
+                    onChange={e => setEcritureForm({ ...ecritureForm, debit: Number(e.target.value), credit: 0 })} />
+                </div>
+                <div>
+                  <label className="label">Crédit (XOF)</label>
+                  <input type="number" min={0} className="input font-semibold"
+                    value={ecritureForm.credit}
+                    onChange={e => setEcritureForm({ ...ecritureForm, credit: Number(e.target.value), debit: 0 })} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-surface-border">
+                <button type="button" onClick={() => setShowEcritureModal(false)} className="btn-ghost" disabled={isSaving}>Annuler</button>
+                <button type="submit" className="btn-primary" disabled={isSaving}>
+                  {isSaving ? <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</span>
+                    : <span className="flex items-center gap-2"><Save className="w-4 h-4" /> Valider l'écriture</span>}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

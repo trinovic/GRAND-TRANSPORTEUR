@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Bot, Send, AlertTriangle, Sparkles, Brain, Cpu, MessageSquare,
   TrendingDown, FileText, ChevronRight, User, HelpCircle, ArrowUpRight
@@ -13,34 +13,46 @@ const RECOMMENDATIONS = [
 ];
 
 export default function IAAssistantPage() {
-  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string; time: string }>>([
-    { sender: 'ai', text: 'Bonjour ! Je suis l\'Assistant Intelligent de "Le Grand Transporteur". Je peux analyser vos données logistiques, prédire les pannes de flotte, et estimer la rentabilité financière de vos missions. Posez-moi vos questions.', time: '14:30' }
+  const [messages, setMessages] = useState<Array<{ sender: 'user' | 'ai'; text: string; time: string }>>([    { sender: 'ai', text: 'Bonjour ! Je suis l\'Assistant Intelligent de "Le Grand Transporteur". Je peux analyser vos données logistiques, prédire les pannes de flotte, et estimer la rentabilité financière de vos missions. Posez-moi vos questions.', time: '14:30' }
   ]);
   const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  useEffect(() => { scrollToBottom(); }, [messages, isTyping]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
 
     const newMsgs = [...messages, { sender: 'user' as const, text: input, time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) }];
     setMessages(newMsgs);
     setInput('');
+    setIsTyping(true);
 
     // Simulate AI response
     setTimeout(() => {
       let response = "Je traite votre demande de rapport. D'après mes calculs récents sur la base de données, la rentabilité globale de la flotte est en hausse de 2.4% ce mois-ci, portée par les missions de transport d'hydrocarbures pour SHELL.";
       if (input.toLowerCase().includes('camion') || input.toLowerCase().includes('panne') || input.toLowerCase().includes('flotte')) {
-        response = "Analyse de la flotte : le véhicule TN-7701-EF (MAN TGX) présente une hausse anormale de consommation de carburant de 11.5% sur les 3 dernières missions. Un contrôle de la pression des pneus et du système d'injection est recommandé sous 7 jours.";
+        response = "Analyse de la flotte : le véhicule TN-7701-EF (MAN TGX) présente une hausse anormale de consommation de carburant de 11.5% sur les 3 dernières missions. Un contrôle de la pression des pneus et du système d'injection est recommandé sous 7 jours.";
       } else if (input.toLowerCase().includes('rentabilité') || input.toLowerCase().includes('argent') || input.toLowerCase().includes('marge')) {
-        response = "Analyse financière : la marge moyenne de vos missions est de 38.4%. Les missions les plus rentables sont effectuées par Oumar Seck sur le véhicule TN-1102-GH pour TOTAL Énergies (41.8% de marge moyenne).";
+        response = "Analyse financière : la marge moyenne de vos missions est de 38.4%. Les missions les plus rentables sont effectuées par Oumar Seck sur le véhicule TN-1102-GH pour TOTAL Énergies (41.8% de marge moyenne).";
+      } else if (input.toLowerCase().includes('trésorerie') || input.toLowerCase().includes('flux') || input.toLowerCase().includes('cash')) {
+        response = "Prévision de trésorerie : les encaissements prévus au 15 juillet (3 factures échéant : SONACOS, SHELL, TOTAL) permettront de couvrir 120% des charges fixes du mois. Un excédent de 18.2M XOF est anticipé.";
       }
 
+      setIsTyping(false);
       setMessages(prev => [...prev, {
         sender: 'ai' as const,
         text: response,
         time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
       }]);
-    }, 1000);
+    }, 1400);
+  };
+
+  const handleSuggestion = (q: string) => {
+    setInput(q);
   };
 
   return (
@@ -82,6 +94,21 @@ export default function IAAssistantPage() {
                 </div>
               </div>
             ))}
+            {isTyping && (
+              <div className="flex gap-3 max-w-[80%]">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-brand-50 text-brand-700 border border-brand-100">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div className="p-3.5 rounded-xl bg-brand-50 border border-brand-100/50 rounded-tl-none">
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-brand-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Chat input */}
@@ -99,7 +126,7 @@ export default function IAAssistantPage() {
         </div>
 
         {/* Right insights panel */}
-        <div className="w-80 flex flex-col gap-6 overflow-y-auto hidden xl:block flex-shrink-0 min-h-0">
+        <div className="w-80 flex flex-col gap-4 overflow-y-auto hidden lg:flex flex-shrink-0 min-h-0">
           <div className="section-card p-5 space-y-4">
             <h2 className="text-sm font-bold text-text-primary flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-amber-500" /> Analyse prédictive active</h2>
             <div className="space-y-3">
@@ -125,7 +152,7 @@ export default function IAAssistantPage() {
               ].map(q => (
                 <button
                   key={q}
-                  onClick={() => setInput(q)}
+                  onClick={() => handleSuggestion(q)}
                   className="w-full text-left p-2 hover:bg-surface-bg rounded text-xs text-text-secondary hover:text-text-primary transition-all duration-150 flex items-center justify-between group"
                 >
                   <span>{q}</span>
